@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalhes do AS - GeoRoute BR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/d3@7"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/lucide.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-900">
+  <header class="bg-white shadow">
+    <div class="container mx-auto px-4 py-6 flex justify-between items-center">
+      <h1 class="text-2xl font-bold">GeoRoute BR</h1>
+      <nav class="space-x-4">
+        <a href="index.html" class="text-blue-600 hover:underline">Home</a>
+        <a href="dashboard.html" class="text-blue-600 hover:underline">Dashboard</a>
+        <a href="map.html" class="text-blue-600 hover:underline">Mapa</a>
+        <a href="search.html" class="text-blue-600 hover:underline">Busca</a>
+        <a href="as_detail.html" class="text-blue-600 hover:underline">Detalhe AS</a>
+        <a href="about.html" class="text-blue-600 hover:underline">Sobre</a>
+        <a href="contact.html" class="text-blue-600 hover:underline">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-4 py-12">
+    <h2 id="asnTitle" class="text-3xl font-semibold mb-6">AS Details</h2>
+    <div id="info" class="space-y-2 mb-8">
+      <!-- populated by script -->
+    </div>
+    <div id="localGraph" class="border rounded" style="width:100%;height:400px;"></div>
+  </main>
+
+  <footer class="bg-white border-t">
+    <div class="container mx-auto px-4 py-4 text-center text-sm">
+      &copy; 2026 GeoRoute BR. Todos os direitos reservados.
+    </div>
+  </footer>
+
+<script>
+// dummy details
+const params = new URLSearchParams(window.location.search);
+const asn = params.get('asn') || 'AS1';
+const dummy = {
+  'AS1':{asn:'AS1',org:'Example ISP',prefixes:['2001:db8::/32','192.0.2.0/24'],upstreams:['AS2'],peers:['AS3'],routes:42,links:[{source:'AS1',target:'AS2'},{source:'AS1',target:'AS3'}]}
+};
+const data = dummy[asn];
+if(data){
+  document.getElementById('asnTitle').textContent = `${data.asn} - ${data.org}`;
+  const infoDiv = document.getElementById('info');
+  infoDiv.innerHTML = `
+    <p><strong>ASN:</strong> ${data.asn}</p>
+    <p><strong>Organização:</strong> ${data.org}</p>
+    <p><strong>Prefixos anunciados:</strong> ${data.prefixes.join(', ')}</p>
+    <p><strong>Upstream providers:</strong> ${data.upstreams.join(', ')}</p>
+    <p><strong>Peers:</strong> ${data.peers.join(', ')}</p>
+    <p><strong>Número de rotas:</strong> ${data.routes}</p>
+  `;
+  // draw mini graph
+  const nodes = [{id:data.asn},{id:data.upstreams[0]},{id:data.peers[0]}];
+  const links = data.links;
+  const w = document.getElementById('localGraph').clientWidth;
+  const h = document.getElementById('localGraph').clientHeight;
+  const svg = d3.select('#localGraph').append('svg').attr('width',w).attr('height',h);
+  const sim = d3.forceSimulation(nodes).force('link',d3.forceLink(links).id(d=>d.id).distance(100)).force('charge',d3.forceManyBody().strength(-200)).force('center',d3.forceCenter(w/2,h/2));
+  const link = svg.append('g').attr('stroke','#aaa').selectAll('line').data(links).join('line');
+  const node = svg.append('g').attr('stroke','#fff').attr('stroke-width',1.5).selectAll('circle').data(nodes).join('circle').attr('r',10).attr('fill','#3182ce');
+  sim.on('tick',()=>{link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);node.attr('cx',d=>d.x).attr('cy',d=>d.y);});
+}
+</script>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

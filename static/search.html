@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Investigação de Redes - GeoRoute BR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/lucide.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-900">
+  <header class="bg-white shadow">
+    <div class="container mx-auto px-4 py-6 flex justify-between items-center">
+      <h1 class="text-2xl font-bold">GeoRoute BR</h1>
+      <nav class="space-x-4">
+        <a href="index.html" class="text-blue-600 hover:underline">Home</a>
+        <a href="dashboard.html" class="text-blue-600 hover:underline">Dashboard</a>
+        <a href="map.html" class="text-blue-600 hover:underline">Mapa</a>
+        <a href="search.html" class="text-blue-600 hover:underline font-semibold">Busca</a>
+        <a href="as_detail.html" class="text-blue-600 hover:underline">Detalhe AS</a>
+        <a href="about.html" class="text-blue-600 hover:underline">Sobre</a>
+        <a href="contact.html" class="text-blue-600 hover:underline">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-4 py-12">
+    <h2 class="text-3xl font-semibold mb-6">Investigar Rede</h2>
+    <div class="mb-6">
+      <input id="queryInput" type="text" class="w-full border rounded px-3 py-2" placeholder="Digite ASN, prefixo ou nome do provedor" />
+    </div>
+    <button id="searchBtn" class="bg-blue-600 text-white px-6 py-2 rounded mb-6">Pesquisar</button>
+
+    <div id="results" class="space-y-4"></div>
+  </main>
+
+  <footer class="bg-white border-t">
+    <div class="container mx-auto px-4 py-4 text-center text-sm">
+      &copy; 2026 GeoRoute BR. Todos os direitos reservados.
+    </div>
+  </footer>
+
+<script>
+const dummyData = {
+  "AS123": {asn:"AS123",org:"Example ISP",prefixes:["2001:db8::/32","192.0.2.0/24"],upstreams:["AS1","AS2"],peers:["AS3"],history:["2026-03-12 rota A","2026-03-11 rota B"]},
+};
+
+searchBtn.addEventListener('click', () => {
+  const q = queryInput.value.trim();
+  if (!q) return;
+  const res = dummyData[q] || null;
+  const container = document.getElementById('results');
+  container.innerHTML = '';
+  if (!res) {
+    container.innerHTML = '<div class="text-red-500">Nenhum resultado encontrado</div>';
+    return;
+  }
+  container.innerHTML = `
+    <div class="bg-white p-4 rounded shadow">
+      <h3 class="text-xl font-semibold">${res.asn} - ${res.org}</h3>
+      <p><strong>Prefixos anunciados:</strong> ${res.prefixes.join(', ')}</p>
+      <p><strong>Upstream providers:</strong> ${res.upstreams.join(', ')}</p>
+      <p><strong>Peers:</strong> ${res.peers.join(', ')}</p>
+      <p><strong>Histórico de rotas:</strong> ${res.history.join('; ')}</p>
+    </div>
+  `;
+});
+</script>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>
