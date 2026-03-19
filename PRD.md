@@ -1,8 +1,3 @@
-User: Escreva um PRD(Product Requirement Document) para um projeto: Este projeto acompanha e visualiza o roteamento entre Sistemas Autônomos (AS) na internet, permitindo entender como os provedores se conectam globalmente. Ele coleta anúncios BGP em tempo real, detecta mudanças de rota, identifica possíveis problemas como sequestro de prefixo ou instabilidade de caminhos, e apresenta um mapa interativo de topologia da internet.
-
-Essa é a descrição do projeto
-
-GitHub Copilot: ### 📄 Documento de Requisitos do Produto (PRD)
 
 #### 1. **Visão Geral do Projeto**
 O objetivo é construir uma **plataforma de rastreamento e visualização de roteamento entre Sistemas Autônomos (AS)** na Internet. O sistema permitirá a análise em tempo real de como os provedores e redes se interconectam globalmente, facilitando a detecção de anomalias, instabilidades e ataques de roteamento (e.g. sequestro de prefixo).
