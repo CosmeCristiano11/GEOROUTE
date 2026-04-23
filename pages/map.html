@@ -45,7 +45,7 @@
 
     <!-- Controles do Mapa -->
     <div class="row mb-3">
-      <div class="col-md-4">
+      <div class="col-md-3">
         <input id="searchInput" type="text" class="form-control" placeholder="Buscar ASN ou organização..." />
       </div>
       <div class="col-md-2">
@@ -66,8 +66,19 @@
           <option value="customer">Customers</option>
         </select>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-2">
+        <select id="routeFilter" class="form-select">
+          <option value="">Sem filtros de rota</option>
+          <option value="no-tolls">Evitar portagens</option>
+          <option value="bike-friendly">Preferir ciclovias</option>
+          <option value="fastest">Mais rápido</option>
+          <option value="shortest">Mais curto</option>
+        </select>
+      </div>
+      <div class="col-md-3">
         <div class="d-flex gap-2">
+          <button id="darkModeToggle" class="btn btn-outline-secondary">🌙 Dark Mode</button>
+          <button id="followLocationBtn" class="btn btn-outline-primary">📍 Seguir Posição</button>
           <button id="resetViewBtn" class="btn btn-outline-secondary">Reset View</button>
           <button id="toggleConnectionsBtn" class="btn btn-outline-primary">Ocultar Conexões</button>
           <button id="showLegendBtn" class="btn btn-outline-info">Legenda</button>
@@ -75,10 +86,33 @@
       </div>
     </div>
 
+    <!-- ETA e Direções -->
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <div id="etaDisplay" class="alert alert-info" style="display: none;">
+          <strong>ETA:</strong> <span id="etaTime">Calculando...</span> | Distância restante: <span id="remainingDistance">0 km</span>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div id="directionsList" class="card" style="display: none;">
+          <div class="card-body">
+            <h6 class="card-title">Direções</h6>
+            <ul id="directionsUl" class="list-group list-group-flush">
+              <!-- Skeleton para direções -->
+              <li class="list-group-item skeleton skeleton-text"></li>
+              <li class="list-group-item skeleton skeleton-text"></li>
+              <li class="list-group-item skeleton skeleton-text"></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Container do Mapa -->
     <div class="row">
       <div class="col-12">
-        <div id="map" style="height: 600px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);"></div>
+        <div id="mapSkeleton" class="skeleton skeleton-map" style="display: block;"></div>
+        <div id="map" style="height: 600px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: none;"></div>
       </div>
     </div>
 
@@ -357,6 +391,123 @@
     };
 
     L.control.layers(baseLayers, overlays).addTo(map);
+
+    // Simular carregamento do mapa
+    setTimeout(() => {
+      document.getElementById('mapSkeleton').style.display = 'none';
+      document.getElementById('map').style.display = 'block';
+    }, 2000);
+
+    // Dark Mode
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const body = document.body;
+
+    // Detectar preferência do sistema ou horário
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const hour = new Date().getHours();
+    const isNight = hour >= 18 || hour < 6;
+
+    if (prefersDark || isNight) {
+      body.classList.add('dark');
+      darkModeToggle.textContent = '☀️ Light Mode';
+    }
+
+    darkModeToggle.addEventListener('click', () => {
+      body.classList.toggle('dark');
+      darkModeToggle.textContent = body.classList.contains('dark') ? '☀️ Light Mode' : '🌙 Dark Mode';
+    });
+
+    // Geolocalização
+    let userMarker = null;
+    let watchId = null;
+    let userHeading = 0;
+
+    document.getElementById('followLocationBtn').addEventListener('click', () => {
+      if (navigator.geolocation) {
+        if (watchId) {
+          navigator.geolocation.clearWatch(watchId);
+          watchId = null;
+          if (userMarker) map.removeLayer(userMarker);
+          document.getElementById('followLocationBtn').textContent = '📍 Seguir Posição';
+          return;
+        }
+
+        watchId = navigator.geolocation.watchPosition((position) => {
+          const { latitude, longitude } = position.coords;
+          const latlng = [latitude, longitude];
+
+          if (userMarker) {
+            userMarker.setLatLng(latlng);
+          } else {
+          userMarker = L.marker(latlng, {
+            icon: L.divIcon({
+              className: 'user-location-icon',
+              html: '📍',
+              iconSize: [30, 30],
+              iconAnchor: [15, 30]
+            })
+          }).addTo(map);
+          map.setView(latlng, 15);
+
+          // Simular ETA e direções
+          updateETA(latitude, longitude);
+          showDirections();
+        }, (error) => {
+          console.error('Erro na geolocalização:', error);
+          alert('Erro ao obter localização: ' + error.message);
+        }, {
+          enableHighAccuracy: true,
+          maximumAge: 30000,
+          timeout: 27000
+        });
+
+        document.getElementById('followLocationBtn').textContent = '⏹️ Parar Seguimento';
+      } else {
+        alert('Geolocalização não suportada neste navegador.');
+      }
+    });
+
+    // Orientação do dispositivo (bússola)
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', (event) => {
+        userHeading = event.alpha || 0;
+        // Nota: Para rotação real, seria necessário um plugin Leaflet ou canvas
+        console.log('Heading:', userHeading);
+      });
+    }
+
+    // Função para atualizar ETA
+    function updateETA(lat, lng) {
+      // Simulação: calcular distância para um destino dummy
+      const destination = [37.7749, -122.4194]; // São Francisco
+      const distance = map.distance([lat, lng], destination) / 1000; // km
+      const speed = 50; // km/h média
+      const time = distance / speed; // horas
+      const eta = new Date(Date.now() + time * 3600000);
+
+      document.getElementById('remainingDistance').textContent = distance.toFixed(1) + ' km';
+      document.getElementById('etaTime').textContent = eta.toLocaleTimeString();
+      document.getElementById('etaDisplay').style.display = 'block';
+    }
+
+    // Função para mostrar direções
+    function showDirections() {
+      const directionsUl = document.getElementById('directionsUl');
+      directionsUl.innerHTML = `
+        <li class="list-group-item">Vire à esquerda na Rua A</li>
+        <li class="list-group-item">Continue por 2 km</li>
+        <li class="list-group-item">Chegada ao destino</li>
+      `;
+      document.getElementById('directionsList').style.display = 'block';
+    }
+
+    // Filtros de rota (placeholder)
+    document.getElementById('routeFilter').addEventListener('change', function(e) {
+      const filter = e.target.value;
+      // Aqui seria aplicada a lógica de filtro na API de rotas
+      console.log('Filtro de rota aplicado:', filter);
+      alert('Filtro "' + filter + '" aplicado (simulação).');
+    });
   </script>
 
   <script>lucide.createIcons();</script>
